@@ -54,6 +54,17 @@ class OpenAICompatibleClient:
     @staticmethod
     def _image_data_url(image_bytes: bytes, filename: str) -> str:
         mime_type, _ = mimetypes.guess_type(filename)
+        # Windows and certain environments do not register .webp in mimetypes by default
+        if not mime_type:
+            ext = Path(filename).suffix.lower()
+            extension_map = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+            }
+            mime_type = extension_map.get(ext)
+
         if mime_type not in {"image/png", "image/jpeg", "image/webp"}:
             raise ValueError("Only PNG, JPEG and WEBP images are supported.")
         encoded = base64.b64encode(image_bytes).decode("ascii")
@@ -85,6 +96,7 @@ class OpenAICompatibleClient:
             response = self.client.chat.completions.create(
                 model=self.model,
                 temperature=0.1,
+                max_tokens=4096,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content},

@@ -13,6 +13,19 @@ class KiCadError(RuntimeError):
 
 def locate_kicad_cli(configured_path: str = "") -> str:
     executable = configured_path.strip() or shutil.which("kicad-cli")
+    if not executable and os.name == "nt":
+        # Search common Windows default installation paths
+        common_roots = [
+            Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "KiCad",
+            Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "KiCad",
+        ]
+        for root in common_roots:
+            if root.exists():
+                candidates = list(root.glob("**/bin/kicad-cli.exe"))
+                if candidates:
+                    executable = str(candidates[0])
+                    break
+
     if not executable:
         raise KiCadError(
             "kicad-cli was not found. Add it to PATH or configure KICAD_CLI_PATH."

@@ -66,8 +66,9 @@ with tab_design:
             image_data = None
             if uploaded_image:
                 try:
-                    from PIL import Image as PILImage
                     import io
+
+                    from PIL import Image as PILImage
 
                     raw = uploaded_image.getvalue()
                     # verify() must be called on a freshly opened (not context-managed)
@@ -215,10 +216,15 @@ with tab_kicad:
                     )
                 st.write(f"KiCad CLI return code: {report['return_code']}")
                 st.write(f"Result: **{report['status']}**")
-                st.json(report["report"] if report["report"] is not None else {
-                    "stdout": report["stdout"],
-                    "stderr": report["stderr"],
-                })
+                if isinstance(report["report"], (dict, list)):
+                    st.json(report["report"])
+                elif report["report"]:
+                    st.code(str(report["report"]))
+                else:
+                    st.json({
+                        "stdout": report["stdout"],
+                        "stderr": report["stderr"],
+                    })
                 if Path(report["report_path"]).exists():
                     st.download_button(
                         "Download ERC report",

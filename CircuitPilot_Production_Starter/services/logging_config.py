@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 # Sentinel so that repeated imports (or Streamlit hot-reloads) do not duplicate handlers.

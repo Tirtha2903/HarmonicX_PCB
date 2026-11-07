@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from schemas.circuit import CircuitDesign, Component, Connection
+from schemas.circuit import CircuitDesign, Connection
 
 
 def minimal_design(**overrides):

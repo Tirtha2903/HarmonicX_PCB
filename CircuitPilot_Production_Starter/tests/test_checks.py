@@ -1,5 +1,5 @@
-from schemas.circuit import CircuitDesign
 from electronics.checks import run_structural_checks
+from schemas.circuit import CircuitDesign
 
 
 def test_structural_checks_are_not_erc():
