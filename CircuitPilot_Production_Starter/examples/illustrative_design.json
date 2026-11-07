@@ -1,0 +1,42 @@
+{
+  "project_name": "555_LED_Flasher_Concept",
+  "project_description": "Illustrative concept only; requires engineering verification.",
+  "supply_voltage_v": 5.0,
+  "target_frequency_hz": 2.0,
+  "components": [
+    {
+      "reference": "U1",
+      "name": "NE555 timer IC",
+      "quantity": 1,
+      "value": null,
+      "description": "Astable timer",
+      "footprint": null,
+      "voltage_rating_v": null,
+      "current_rating_a": null,
+      "manufacturer_part_number": null,
+      "datasheet_url": null,
+      "evidence_status": "unverified",
+      "confidence": 0.5
+    }
+  ],
+  "connections": [],
+  "board": {
+    "layers": 2,
+    "board_width_mm": null,
+    "board_height_mm": null,
+    "board_material": "FR4",
+    "copper_weight_oz": null,
+    "manufacturing_notes": []
+  },
+  "missing_information": [
+    "Exact timer variant and pin mapping must be confirmed."
+  ],
+  "assumptions": [
+    "Illustrative example only."
+  ],
+  "requires_confirmation": true,
+  "design_notes": [
+    "Do not fabricate from this sample."
+  ],
+  "overall_confidence": 0.4
+}
