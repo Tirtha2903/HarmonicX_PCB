@@ -3,11 +3,20 @@
 ## Current capability boundary
 
 The current codebase is an AI-assisted circuit-analysis workbench. It produces
-structured JSON, BOM CSV and connection CSV, plus structural checks. It can
-run KiCad ERC on a supplied native schematic.
+structured JSON, BOM CSV and connection CSV; performs structural checks and
+deterministic Red-Team review; generates deterministic Virtual Lab procedures;
+and stores append-only Circuit DNA versions, fingerprints and change reports
+in SQLite. Optional AI additions to Red-Team and Virtual Lab output are
+controlled by `ENABLE_AI_RED_TEAM` and `ENABLE_AI_VIRTUAL_LAB`. It can run
+KiCad ERC on a supplied native schematic.
 
 It does not synthesize native KiCad schematic/PCB files from the AI result.
-It does not establish electrical correctness or manufacturing readiness.
+It does not run SPICE simulation, PCB DRC on generated designs, thermal or
+signal-integrity analysis, and it does not establish electrical correctness or
+manufacturing readiness. Red-Team results are heuristics over declared data;
+Virtual Lab output is a proposed test procedure, not measured evidence. Circuit
+DNA is a local SQLite history configured with `DNA_DB_PATH`, not a collaborative
+or multi-user store.
 
 ## Engineering work required
 

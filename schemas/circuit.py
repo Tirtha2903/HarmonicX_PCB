@@ -17,6 +17,8 @@ class Component(BaseModel):
     footprint: str | None = Field(default=None, max_length=120)
     voltage_rating_v: float | None = Field(default=None, gt=0)
     current_rating_a: float | None = Field(default=None, gt=0)
+    power_rating_w: float | None = Field(default=None, gt=0, le=10000)
+    forward_voltage_v: float | None = Field(default=None, gt=0, le=1000)
     manufacturer_part_number: str | None = Field(default=None, max_length=120)
     datasheet_url: str | None = Field(default=None, max_length=500)
     evidence_status: Literal["verified", "unverified", "user_supplied"] = "unverified"

@@ -19,6 +19,11 @@ projects/*
 logs/*
 !logs/.gitkeep
 
+# Circuit DNA local database
+circuitpilot_dna.db
+circuitpilot_dna.db-*
+*.sqlite
+
 # IDE / OS
 .vscode/
 .idea/

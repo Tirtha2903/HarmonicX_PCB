@@ -5,7 +5,7 @@ GitHub repository and opening it in Antigravity through testing, deployment,
 release hardening and a production-readiness review.
 
 The instructions assume a four-person team, mixed Windows/Linux machines,
-Python 3.11, KiCad 10 and an OpenAI-compatible model endpoint.
+Python 3.11, KiCad 10 and the OpenAI API.
 
 ---
 
@@ -18,9 +18,16 @@ It can:
 2. Call a configured OpenAI-compatible Chat Completions endpoint.
 3. Parse the response into a strict Pydantic circuit schema.
 4. Flag missing information, assumptions and low-confidence selections.
-5. Run deterministic schema/reference checks.
-6. Export a JSON design specification, BOM CSV and connection CSV.
-7. Run KiCad ERC on a user-uploaded native `.kicad_sch` file.
+5. Run deterministic schema/reference checks and a Circuit Red-Team review.
+6. Generate a deterministic Virtual Lab test procedure with optional AI additions.
+7. Save append-only Circuit DNA versions, fingerprints and change reports in SQLite.
+8. Export a JSON design specification, BOM CSV, connection CSV and additive review artifacts.
+9. Run KiCad ERC on a user-uploaded native `.kicad_sch` file.
+
+The Streamlit entry point is `app.py`; UI tabs are in `ui/`, orchestration is in
+`agents/`, typed design data is in `schemas/`, deterministic engineering logic
+and exports are in `electronics/`, and persistence/AI services are in `services/`.
+The automated tests use deterministic inputs and do not require live AI calls.
 
 It does not yet create a native KiCad schematic or PCB from the AI-generated
 specification. It does not run SPICE simulation, PCB DRC on generated designs,
@@ -241,26 +248,42 @@ Linux:
 cp .env.example .env
 ```
 
-2. Obtain the provider's documented OpenAI-compatible **Chat Completions**
-   base URL and exact model identifier.
-3. Edit `.env`:
+2. This project defaults to OpenAI's **Chat Completions** endpoint. The OpenAI
+   API does not require an organization ID for the usual setup; use a model
+   enabled for the key's project. The default model is `gpt-4o-mini`.
+3. Edit your local `.env`:
 
 ```env
-AI_BASE_URL=https://provider-documented-host/v1
-AI_API_KEY=your_secret_key
-AI_MODEL=exact_model_identifier
+AI_BASE_URL=https://api.openai.com/v1
+AI_API_KEY=your_openai_api_key
+AI_MODEL=gpt-4o-mini
 
 KICAD_CLI_PATH=
 MAX_IMAGE_MB=8
 MAX_PROMPT_CHARS=12000
 OUTPUT_DIR=projects
 LOG_LEVEL=INFO
+DNA_DB_PATH=circuitpilot_dna.db
+ENABLE_AI_RED_TEAM=true
+ENABLE_AI_VIRTUAL_LAB=true
 ```
+
+`AI_API_KEY` is required when invoking the configured AI provider, but is not
+needed just to start and render the app. Set either `ENABLE_AI_RED_TEAM=false`
+or `ENABLE_AI_VIRTUAL_LAB=false` to disable those optional AI additions; their
+deterministic Red-Team rules and Virtual Lab procedure remain available.
+`DNA_DB_PATH` accepts a path relative to the project root or an absolute path.
+Keep the database on persistent storage if saved design history must survive
+restarts, and do not commit secrets or a production database. OpenAI API usage
+is billed separately from ChatGPT subscriptions. If using another person's key,
+get their permission first and agree on a usage budget; API charges are incurred
+by the key owner's account.
 
 4. Do not paste the API key into Antigravity chat, GitHub issues, commits,
    screenshots, source files or Discord.
-5. Do not assume that every OpenAI-compatible provider supports image input.
-   Confirm that the chosen model supports image content in Chat Completions.
+5. The configured model must support image input in Chat Completions for image
+   analysis. `gpt-4o-mini` supports image input; check current model access and
+   project limits in the OpenAI platform.
 6. Test with a simple text-only prompt first, then test image input.
 
 If the provider uses a different endpoint shape, authentication convention,
@@ -279,6 +302,13 @@ streamlit run app.py
 
 Open the local URL printed in the terminal (normally
 `http://localhost:8501`).
+
+Run the local quality checks from the project root:
+
+```bash
+python -m pytest -q
+python -m ruff check .
+```
 
 ## First smoke test
 
@@ -523,9 +553,9 @@ Unit tests should run without paid API access.
 8. Add secrets in the platform's app settings, not in GitHub:
 
 ```toml
-AI_BASE_URL = "https://provider-documented-host/v1"
-AI_API_KEY = "your-secret"
-AI_MODEL = "exact-model-id"
+AI_BASE_URL = "https://api.openai.com/v1"
+AI_API_KEY = "your_openai_api_key"
+AI_MODEL = "gpt-4o-mini"
 MAX_IMAGE_MB = "8"
 MAX_PROMPT_CHARS = "12000"
 OUTPUT_DIR = "projects"
@@ -547,6 +577,11 @@ runtime can execute local EDA software.
 
 For a public demo, clearly disable or label unavailable KiCad functionality
 rather than showing a misleading success state.
+
+The current `.streamlit/config.toml` sets `server.enableCORS=false`, which
+causes Streamlit to warn that cross-origin WebSocket connections are accepted.
+Review the setting for the hosting environment; enable CORS and restrict
+allowed origins/hosts as appropriate before exposing the app publicly.
 
 ---
 
@@ -637,7 +672,10 @@ before offering the service to external users.
 - Structured design analysis.
 - Missing-information handling.
 - BOM and connection exports.
-- Structural checks.
+- Structural checks and deterministic Circuit Red-Team rules.
+- Deterministic Virtual Lab procedures with optional AI additions.
+- Append-only Circuit DNA history, fingerprints and change reports.
+- Additive Red-Team review and analysis manifest artifacts.
 - ERC for uploaded reference schematics.
 
 ## Release 0.2 — Native circuit generation

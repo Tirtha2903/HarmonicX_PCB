@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from schemas.circuit import CircuitDesign
+from schemas.fingerprint import design_fingerprint
 
 
 def safe_slug(value: str) -> str:
@@ -69,3 +70,59 @@ def export_design(design: CircuitDesign, output_root: Path) -> Path:
             })
 
     return project_dir
+
+
+def export_review_artifacts(
+    design: CircuitDesign,
+    red_team,
+    project_dir: Path,
+) -> dict[str, Path]:
+    """Write Red-Team artifacts next to the existing design exports.
+
+    The original ``circuit_design.json``, ``bom.csv`` and ``connections.csv``
+    contract is untouched. These files are additive.
+    """
+    if not project_dir.exists():
+        raise FileNotFoundError(f"Artifact directory does not exist: {project_dir}")
+
+    review_json = project_dir / "red_team_review.json"
+    review_md = project_dir / "red_team_review.md"
+    review_json.write_text(
+        json.dumps(red_team.model_dump(mode="json"), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    from electronics.red_team.report import report_to_markdown
+
+    review_md.write_text(report_to_markdown(red_team, design), encoding="utf-8")
+
+    manifest = project_dir / "analysis_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "project_name": design.project_name,
+                "design_fingerprint": design_fingerprint(design),
+                "reviewed_at": red_team.reviewed_at,
+                "overall_status": red_team.overall_status,
+                "artifact_contract": [
+                    "circuit_design.json",
+                    "bom.csv",
+                    "connections.csv",
+                ],
+                "additive_artifacts": [
+                    "red_team_review.json",
+                    "red_team_review.md",
+                    "analysis_manifest.json",
+                ],
+                "simulation_performed": False,
+                "erc_performed": False,
+                "safety_certified": False,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return {
+        "red_team_review_json": review_json,
+        "red_team_review_md": review_md,
+        "analysis_manifest": manifest,
+    }

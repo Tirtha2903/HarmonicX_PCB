@@ -33,6 +33,8 @@ Schema:
     "footprint": null,
     "voltage_rating_v": null,
     "current_rating_a": null,
+    "power_rating_w": null,
+    "forward_voltage_v": null,
     "manufacturer_part_number": null,
     "datasheet_url": null,
     "evidence_status": "unverified",
