@@ -29,9 +29,12 @@ def get_settings() -> Settings:
         output_path = BASE_DIR / output_path
 
     return Settings(
-        ai_base_url=os.getenv("AI_BASE_URL", "").strip(),
+        ai_base_url=os.getenv(
+            "AI_BASE_URL",
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+        ).strip(),
         ai_api_key=os.getenv("AI_API_KEY", "").strip(),
-        ai_model=os.getenv("AI_MODEL", "").strip(),
+        ai_model=os.getenv("AI_MODEL", "gemini-3-flash-preview").strip(),
         kicad_cli_path=os.getenv("KICAD_CLI_PATH", "").strip(),
         max_image_mb=max(1, int(os.getenv("MAX_IMAGE_MB", "8"))),
         max_prompt_chars=max(500, int(os.getenv("MAX_PROMPT_CHARS", "12000"))),

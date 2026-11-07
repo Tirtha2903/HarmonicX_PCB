@@ -67,8 +67,11 @@ Engineering rules:
 3. Never invent manufacturer part numbers, datasheet URLs or verified evidence.
    Use null and evidence_status="unverified" unless the user supplies evidence.
 4. Use unique reference designators (R1, C1, U1, D1, J1, etc.).
-5. Connections use REF.PIN strings, for example U1.2. Do not infer a pin map
-   from a generic part name if the exact part/package is unknown.
+5. Connections use REF.PIN strings, for example U1.2. Every connection net MUST
+   connect at least 2 distinct component pins (e.g. ["R1.2", "R2.1"]). Never include
+   connections with fewer than 2 pins. If an external connection (like power or input)
+   has no connector or second component pin to connect to, record it in missing_information
+   or assumptions instead of creating a 1-pin connection.
 6. Distinguish user-specified facts from assumptions.
 7. Set requires_confirmation=true whenever important electrical details are
    missing, ambiguous or unverified.
@@ -110,6 +113,19 @@ class DesignAgent:
         )
         try:
             payload = self._extract_json(response)
+            # Defensive check: if model produced any single-pin connection, preserve as missing info
+            if "connections" in payload and isinstance(payload["connections"], list):
+                valid_connections = []
+                for conn in payload["connections"]:
+                    if isinstance(conn, dict) and len(conn.get("pins", [])) >= 2:
+                        valid_connections.append(conn)
+                    elif isinstance(conn, dict) and len(conn.get("pins", [])) == 1:
+                        pin = conn["pins"][0]
+                        net = conn.get("net_name", "unnamed")
+                        note = f"Net '{net}' on pin {pin} has no connected destination; excluded from schematic nets."
+                        payload.setdefault("missing_information", []).append(note)
+                payload["connections"] = valid_connections
+
             return CircuitDesign.model_validate(payload)
         except (json.JSONDecodeError, ValidationError, ValueError) as exc:
             logger.warning("AI response failed schema validation: %s", exc)

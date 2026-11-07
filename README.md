@@ -61,18 +61,22 @@ ruff check .
 
 ## Configuration
 
-| Variable | Required | Meaning |
-|---|---:|---|
-| `AI_BASE_URL` | Yes | Provider's OpenAI-compatible API base URL |
-| `AI_API_KEY` | Yes | Secret API key |
-| `AI_MODEL` | Yes | Exact provider model identifier |
-| `KICAD_CLI_PATH` | No | Absolute path to `kicad-cli`, if not on PATH |
-| `MAX_IMAGE_MB` | No | Maximum accepted image size; default 8 MB |
-| `MAX_PROMPT_CHARS` | No | Maximum prompt length; default 12,000 |
-| `OUTPUT_DIR` | No | Output directory; default `projects` |
-| `LOG_LEVEL` | No | Python logging level; default `INFO` |
+| Variable | Required | Meaning | Default |
+|---|---:|---|---|
+| `AI_BASE_URL` | Yes | Provider API base URL | `https://generativelanguage.googleapis.com/v1beta/openai/` |
+| `AI_API_KEY` | Yes | Secret Gemini API key from Google AI Studio | (None) |
+| `AI_MODEL` | Yes | Exact model identifier | `gemini-3-flash-preview` |
+| `KICAD_CLI_PATH` | No | Absolute path to `kicad-cli`, if not on PATH | (Auto-detected) |
+| `MAX_IMAGE_MB` | No | Maximum accepted image size | `8` |
+| `MAX_PROMPT_CHARS` | No | Maximum prompt length | `12000` |
+| `OUTPUT_DIR` | No | Output directory | `projects` |
+| `LOG_LEVEL` | No | Python logging level | `INFO` |
 
-The endpoint must implement the Chat Completions interface and support image input if image analysis is enabled. Some providers use different URL conventions or only partial compatibility. Verify against the provider's documentation.
+### Setting up Google Gemini (Default)
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/api-keys).
+2. Set `AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`.
+3. Set `AI_API_KEY` to your Gemini API key.
+4. Set `AI_MODEL=gemini-3-flash-preview` (or another active Gemini model).
 
 ## KiCad ERC
 
