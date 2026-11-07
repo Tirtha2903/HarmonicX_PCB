@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import ValidationError
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 You are CircuitPilot, a cautious electronics design-analysis assistant.
-Analyze the user's natural-language requirements and optional circuit image.
+Analyze the user's natural-language requirements and optional circuit images.
 Return exactly one JSON object matching the CircuitDesign schema described below.
 Do not return Markdown fences, commentary, or additional keys.
 
@@ -106,12 +107,12 @@ class DesignAgent:
     def analyze(
         self,
         prompt: str,
-        image: tuple[str, bytes] | None = None,
+        images: Sequence[tuple[str, bytes]] | None = None,
     ) -> CircuitDesign:
         response = self.client.complete(
             SYSTEM_PROMPT,
             "Analyze this electronics/PCB request:\n\n" + prompt,
-            image=image,
+            images=images,
         )
         try:
             payload = self._extract_json(response)

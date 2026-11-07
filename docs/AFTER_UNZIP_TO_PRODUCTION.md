@@ -14,7 +14,7 @@ Python 3.11, KiCad 10 and the OpenAI API.
 This codebase is a functional **AI-assisted circuit analysis and review MVP**.
 
 It can:
-1. Accept text requirements and an optional circuit image.
+1. Accept written requirements and up to four optional circuit photos or schematic images.
 2. Call a configured OpenAI-compatible Chat Completions endpoint.
 3. Parse the response into a strict Pydantic circuit schema.
 4. Flag missing information, assumptions and low-confidence selections.
@@ -255,7 +255,7 @@ cp .env.example .env
 
 ```env
 AI_BASE_URL=https://api.openai.com/v1
-AI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=your_openai_api_key
 AI_MODEL=gpt-4o-mini
 
 KICAD_CLI_PATH=
@@ -268,7 +268,7 @@ ENABLE_AI_RED_TEAM=true
 ENABLE_AI_VIRTUAL_LAB=true
 ```
 
-`AI_API_KEY` is required when invoking the configured AI provider, but is not
+`OPENAI_API_KEY` is required when invoking the configured AI provider, but is not
 needed just to start and render the app. Set either `ENABLE_AI_RED_TEAM=false`
 or `ENABLE_AI_VIRTUAL_LAB=false` to disable those optional AI additions; their
 deterministic Red-Team rules and Virtual Lab procedure remain available.
@@ -329,9 +329,28 @@ Check:
 Do not accept a plausible-looking answer as proof that the circuit is correct.
 Compare the output with a known reference circuit and component datasheets.
 
+## Add your own written and photo data
+
+In the Circuit analysis tab, write the circuit's purpose, supply voltage, known
+component names/values, constraints and questions in **Written requirements**.
+You may also upload up to four PNG, JPEG or WEBP images (each within the
+`MAX_IMAGE_MB` limit). Clear, well-lit photos should show labels and connections;
+use separate overview and close-up images if useful. Written requirements and
+all selected images are sent together for analysis. Do not upload sensitive
+personal information or designs you are not authorized to share.
+
+Example written input:
+
+> I want to build a low-voltage LED indicator circuit. The available supply is
+> 5 V DC. The LED should turn on when power is connected. Please identify the
+> information and components needed, but do not guess an LED part number,
+> pinout, or resistor value without stating the assumptions and calculations
+> required. List any missing details I should confirm before building.
+
 ## Image smoke test
 
-1. Upload a clear circuit schematic image in PNG, JPEG or WEBP.
+1. Upload one or more clear circuit schematic, breadboard or PCB images in PNG,
+   JPEG or WEBP (up to four images).
 2. Ask the model to identify visible components and explicit connections.
 3. Check that uncertain labels and ambiguous junctions are reported as missing
    information rather than guessed.
@@ -554,7 +573,7 @@ Unit tests should run without paid API access.
 
 ```toml
 AI_BASE_URL = "https://api.openai.com/v1"
-AI_API_KEY = "your_openai_api_key"
+OPENAI_API_KEY = "your_openai_api_key"
 AI_MODEL = "gpt-4o-mini"
 MAX_IMAGE_MB = "8"
 MAX_PROMPT_CHARS = "12000"

@@ -5,8 +5,10 @@ from __future__ import annotations
 import io
 import logging
 from pathlib import Path
+from typing import Any
 
 import streamlit as st
+from PIL import Image, UnidentifiedImageError
 
 from agents.orchestrator import CircuitPilotOrchestrator
 from config import Settings
@@ -14,59 +16,151 @@ from services.llm_client import LLMConfigurationError, LLMRequestError
 
 logger = logging.getLogger(__name__)
 
+MAX_REFERENCE_IMAGES = 4
+EXAMPLE_PROMPT = (
+    "I want to build a low-voltage LED indicator circuit. The available supply is "
+    "5 V DC. The LED should turn on when power is connected. Please identify the "
+    "information and components needed, but do not guess an LED part number, pinout, "
+    "or resistor value without stating the assumptions and calculations required. "
+    "List any missing details I should confirm before building."
+)
+
+
+def _read_uploaded_images(
+    uploaded_images: list[Any],
+    max_image_mb: int,
+) -> tuple[list[tuple[str, bytes]], list[str]]:
+    images: list[tuple[str, bytes]] = []
+    errors: list[str] = []
+    max_size = max_image_mb * 1024 * 1024
+
+    for uploaded_image in uploaded_images:
+        if uploaded_image.size > max_size:
+            errors.append(
+                f"{uploaded_image.name} exceeds the {max_image_mb} MB per-image limit."
+            )
+            continue
+
+        raw = uploaded_image.getvalue()
+        try:
+            with Image.open(io.BytesIO(raw)) as image:
+                image.verify()
+        except (
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+            Image.DecompressionBombError,
+            Image.DecompressionBombWarning,
+        ) as exc:
+            errors.append(f"{uploaded_image.name} is not a valid supported image: {exc}")
+            continue
+
+        images.append((uploaded_image.name, raw))
+
+    return images, errors
+
 
 def render_design_tab(settings: Settings) -> None:
-    st.subheader("Describe or upload a circuit")
-    prompt = st.text_area(
-        "Circuit requirements",
-        placeholder=(
-            "Example: Design a 5 V LED flasher using an NE555 at approximately "
-            "2 Hz. Include the component values and explain any missing design inputs."
-        ),
-        height=140,
-        max_chars=settings.max_prompt_chars,
-    )
-    uploaded_image = st.file_uploader(
-        "Optional circuit image",
-        type=["png", "jpg", "jpeg", "webp"],
-        help=f"Maximum file size: {settings.max_image_mb} MB.",
+    st.subheader("Add project details and reference photos")
+    st.write(
+        "Describe what you want to build or review. Add clear circuit, breadboard, "
+        "or PCB photos if they help explain the design."
     )
 
-    if st.button("Analyze circuit", type="primary", use_container_width=True):
-        if not prompt.strip() and uploaded_image is None:
-            st.warning("Enter a requirement or upload a circuit image.")
-        elif uploaded_image and uploaded_image.size > settings.max_image_mb * 1024 * 1024:
-            st.error(f"Image exceeds the {settings.max_image_mb} MB limit.")
+    with st.expander("Need help writing the requirements?", expanded=False):
+        st.markdown(
+            """
+            Include what the circuit should do, its power source, known components
+            and values, important constraints, and what you want CircuitPilot to
+            check. For photos, use a sharp, well-lit image with labels and
+            connections visible; you can add up to four PNG, JPEG, or WEBP images.
+            """
+        )
+        st.code(EXAMPLE_PROMPT, language="text")
+
+    st.caption(
+        "Your written requirements and selected photos are sent to the configured "
+        "AI provider for analysis. Do not upload confidential designs without permission."
+    )
+
+    with st.container(border=True):
+        details_column, photos_column = st.columns([1.2, 0.8], gap="large")
+        with details_column:
+            prompt = st.text_area(
+                "Written requirements",
+                placeholder=(
+                    "What should the circuit do? Include supply voltage, known "
+                    "components or values, constraints, and questions you want answered."
+                ),
+                height=220,
+                max_chars=settings.max_prompt_chars,
+                key="design_requirements",
+                help="Text and photos can be submitted together.",
+            )
+            st.caption(f"{len(prompt)} / {settings.max_prompt_chars} characters")
+
+        with photos_column:
+            uploaded_images = st.file_uploader(
+                "Circuit photos or schematic images",
+                type=["png", "jpg", "jpeg", "webp"],
+                accept_multiple_files=True,
+                help=(
+                    f"Add up to {MAX_REFERENCE_IMAGES} images. Maximum "
+                    f"{settings.max_image_mb} MB per image."
+                ),
+                key="circuit_reference_images",
+            )
+            images: list[tuple[str, bytes]] = []
+            image_errors: list[str] = []
+            if len(uploaded_images) > MAX_REFERENCE_IMAGES:
+                image_errors.append(
+                    f"Select no more than {MAX_REFERENCE_IMAGES} images."
+                )
+            else:
+                images, image_errors = _read_uploaded_images(
+                    uploaded_images,
+                    settings.max_image_mb,
+                )
+
+            for error in image_errors:
+                st.error(error)
+
+            if images:
+                st.caption(f"{len(images)} valid reference image(s) ready")
+                preview_columns = st.columns(min(2, len(images)))
+                for index, (filename, image_bytes) in enumerate(images):
+                    with preview_columns[index % len(preview_columns)]:
+                        st.image(
+                            image_bytes,
+                            caption=filename,
+                            use_container_width=True,
+                        )
+
+        analyze_clicked = st.button(
+            "Analyze my circuit",
+            type="primary",
+            use_container_width=True,
+            disabled=bool(image_errors),
+        )
+
+    if analyze_clicked:
+        if not prompt.strip() and not images:
+            st.warning("Enter written requirements, upload at least one image, or do both.")
         else:
-            image_data: tuple[str, bytes] | None = None
-            if uploaded_image:
-                try:
-                    from PIL import Image as PILImage
-
-                    raw = uploaded_image.getvalue()
-                    img = PILImage.open(io.BytesIO(raw))
-                    img.verify()
-                    image_data = (uploaded_image.name, raw)
-                except Exception as exc:
-                    st.error(f"The uploaded file is not a valid supported image: {exc}")
-                    image_data = None
-
-            if uploaded_image and image_data is None:
-                return
-
+            request_prompt = prompt.strip() or "Analyze the uploaded circuit images."
             try:
                 with st.spinner(
-                    "Interpreting requirements, running Red-Team review and exporting artifacts..."
+                    "Analyzing your input, running engineering checks, and preparing reports..."
                 ):
                     result = CircuitPilotOrchestrator(settings).run(
-                        prompt.strip() or "Analyze the uploaded circuit image.",
-                        image=image_data,
+                        request_prompt,
+                        images=images,
                     )
                 st.session_state["circuitpilot_result"] = result
                 st.session_state.pop("lab_procedure", None)
                 st.success(
-                    "Analysis completed. Switch to ⚔️ Red-Team, 🧪 Virtual Lab or "
-                    "🧬 Circuit DNA tabs."
+                    "Analysis completed. Open Red-Team, Virtual Lab, or Circuit DNA "
+                    "for the review details."
                 )
             except LLMConfigurationError as exc:
                 st.error(str(exc))

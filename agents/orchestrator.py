@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from agents.design_agent import DesignAgent
 from config import Settings
 from electronics.checks import run_structural_checks
@@ -16,8 +18,12 @@ class CircuitPilotOrchestrator:
         self.design_agent = DesignAgent(client)
         self.settings = settings
 
-    def run(self, prompt: str, image: tuple[str, bytes] | None = None) -> dict:
-        design = self.design_agent.analyze(prompt, image=image)
+    def run(
+        self,
+        prompt: str,
+        images: Sequence[tuple[str, bytes]] | None = None,
+    ) -> dict:
+        design = self.design_agent.analyze(prompt, images=images)
         checks = run_structural_checks(design)
         red_team = RedTeamEngine(
             self.settings,

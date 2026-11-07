@@ -32,6 +32,10 @@ def _env_flag(name: str, default: bool = True) -> bool:
     return raw.strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _api_key() -> str:
+    return (os.getenv("OPENAI_API_KEY") or os.getenv("AI_API_KEY", "")).strip()
+
+
 def get_settings() -> Settings:
     output_raw = os.getenv("OUTPUT_DIR", "projects")
     output_path = Path(output_raw)
@@ -43,7 +47,7 @@ def get_settings() -> Settings:
             "AI_BASE_URL",
             "https://api.openai.com/v1",
         ).strip(),
-        ai_api_key=os.getenv("AI_API_KEY", "").strip(),
+        ai_api_key=_api_key(),
         ai_model=os.getenv("AI_MODEL", "gpt-4o-mini").strip(),
         kicad_cli_path=os.getenv("KICAD_CLI_PATH", "").strip(),
         max_image_mb=max(1, int(os.getenv("MAX_IMAGE_MB", "8"))),

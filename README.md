@@ -4,7 +4,7 @@
 
 ## What this version does
 
-- Accepts natural-language requirements and optional circuit images.
+- Accepts written requirements with up to four optional circuit photos or schematic images per analysis.
 - Calls an OpenAI-compatible Chat Completions API and validates the response with strict Pydantic models.
 - Flags unverified components, assumptions, and missing information.
 - Runs a deterministic **Circuit Red-Team** review across power, protection, connectivity, compatibility, and requirement consistency.
@@ -70,7 +70,7 @@ python -m ruff check .
 
 ### Circuit analysis
 
-Text and image input are interpreted into a validated `CircuitDesign` containing components, REF.PIN connections, board specifications, assumptions, missing information, and confidence metadata. Outputs are available as `circuit_design.json`, `bom.csv`, and `connections.csv`.
+Written requirements and up to four PNG, JPEG, or WEBP images (maximum `MAX_IMAGE_MB` each) are interpreted together into a validated `CircuitDesign` containing components, REF.PIN connections, board specifications, assumptions, missing information, and confidence metadata. Include the circuit's purpose, supply, known component values, constraints, and questions in the requirements field. Use clear, well-lit photos with readable labels and visible connections. Outputs are available as `circuit_design.json`, `bom.csv`, and `connections.csv`.
 
 ### Circuit Red-Team
 
@@ -126,7 +126,7 @@ A design-content change marks validation as invalid and lists the checks that mu
 | Variable | Required | Meaning | Default |
 |---|---:|---|---|
 | `AI_BASE_URL` | No | OpenAI API base URL | `https://api.openai.com/v1` |
-| `AI_API_KEY` | For AI | Secret provider API key | (None) |
+| `OPENAI_API_KEY` | For AI | Secret OpenAI API key (`AI_API_KEY` is accepted as a legacy alias) | (None) |
 | `AI_MODEL` | No | Exact model identifier available to your API project | `gpt-4o-mini` |
 | `KICAD_CLI_PATH` | No | Absolute path to `kicad-cli`, if not on PATH | (Auto-detected) |
 | `MAX_IMAGE_MB` | No | Maximum accepted image size | `8` |
@@ -142,7 +142,7 @@ Boolean values accept `true/false`, `1/0`, `yes/no`, and `on/off`.
 ### Setting up OpenAI (default)
 
 1. Create an API key in the [OpenAI platform](https://platform.openai.com/api-keys) or obtain an authorized key from your account owner.
-2. Keep the real key in your ignored local `.env` as `AI_API_KEY`. Never put it in `.env.example` or commit it.
+2. Keep the real key in your ignored local `.env` as `OPENAI_API_KEY`. Never put it in `.env.example` or commit it. The older `AI_API_KEY` variable is still accepted.
 3. Use `AI_BASE_URL=https://api.openai.com/v1` and `AI_MODEL=gpt-4o-mini`, or select a model enabled for that API project that supports Chat Completions. This client uses Chat Completions, not the Responses API.
 4. OpenAI API billing is separate from a ChatGPT subscription. Confirm the key owner's permission and usage budget before making requests.
 

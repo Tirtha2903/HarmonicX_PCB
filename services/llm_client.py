@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import mimetypes
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -74,20 +75,20 @@ class OpenAICompatibleClient:
         self,
         system_prompt: str,
         user_prompt: str,
-        image: tuple[str, bytes] | None = None,
+        images: Sequence[tuple[str, bytes]] | None = None,
     ) -> str:
-        if image:
-            filename, image_bytes = image
-            content: list[dict[str, Any]] = [
-                {"type": "text", "text": user_prompt},
+        if images:
+            content: list[dict[str, Any]] = [{"type": "text", "text": user_prompt}]
+            content.extend(
                 {
                     "type": "image_url",
                     "image_url": {
                         "url": self._image_data_url(image_bytes, filename),
                         "detail": "high",
                     },
-                },
-            ]
+                }
+                for filename, image_bytes in images
+            )
             user_content: str | list[dict[str, Any]] = content
         else:
             user_content = user_prompt
